@@ -2,6 +2,100 @@ import random
 import math
 import copy
 
+
+class Board():
+	def __init__(self, board, last_move = [-1,-1]) -> None:
+		self.board = board
+		self.last_move = last_move
+	
+	def tryMove(self, move):
+		# Takes the current board and a possible move specified 
+		# by the column. Returns the appropiate row where the 
+		# piece and be located. If it's not found it returns -1.
+
+		if ( move < 0 or move > 7 or self.board[5][move] != 0 ):
+			return -1
+
+		for i in range(len(self.board)):
+			if ( self.board[i][move] != 0 ):
+				return i-1
+		return len(self.board)-1
+	
+	def terminal(self):
+       # Returns true when the game is finished, otherwise false.
+		for i in range(len(self.board[0])):
+			if ( self.board[5][i] == 0 ):
+				return False
+		return True
+	
+	def legal_moves(self):
+		# Returns the full list of legal moves that for next player.
+		legal = []
+		for col in range(len(self.board[0])):
+			if( self.board[5][col] == 0 ):
+				legal.append(col)
+
+		return legal
+
+	def next_state(self, turn):
+		# Retuns next state
+		aux = copy.deepcopy(self)
+		moves = aux.legal_moves()
+		if len(moves) > 0 :
+			ind = random.randint(0,len(moves)-1)
+			row = aux.tryMove(moves[ind])
+			aux.board[row][moves[ind]] = turn
+			aux.last_move = [ row, moves[ind] ]
+		return aux 
+	
+	def winner(self):
+        # Takes the board as input and determines if there is a winner.
+        # If the game has a winner, it returns the player number (Computer = 1, Human = -1).
+        # If the game is still ongoing, it returns zero.  
+
+		dx = [ 1, 1,  1,  0 ]
+		dy = [ 1, 0,  -1,  1  ]
+
+		x = self.last_move[0]
+		y = self.last_move[1]
+
+		if x == None:
+			return 0 
+
+		for d in range(4):
+
+			h_counter = 0
+			c_counter = 0
+
+			for k in range(-3,4):
+
+				u = x + k * dx[d]
+				v = y + k * dy[d]
+
+				if u < 0 or u >= 6:
+					continue
+
+				if v < 0 or v >= 7:
+					continue
+
+				if self.board[u][v] == -1:
+					c_counter = 0
+					h_counter += 1
+				elif self.board[u][v] == 1:
+					h_counter = 0
+					c_counter += 1
+				else:
+					h_counter = 0
+					c_counter = 0
+
+				if h_counter == 4:
+					return -1 
+
+				if c_counter == 4:	
+					return 1
+
+		return 0
+
 class Node():
 # Data structure to keep track of our search
 	def __init__(self, state, parent = None):
@@ -13,6 +107,7 @@ class Node():
 		self.parent = parent 
 
 	def addChild( self , child_state , move ):
+		print("added a child")
 		child = Node(child_state,self)
 		self.children.append(child)
 		self.children_move.append(move)
@@ -26,12 +121,22 @@ class Node():
 			return True
 		return False
 
-def treePolicy( node, turn , factor ):
+# # Returns true when if the board is full, otherwise false.
+# # Originally called terminal
+# def is_board_full(board):
+# 	for i in range(len(board[0])):
+# 		if ( board[0][i] == 0 ):
+# 			return False
+# 	return True
+
+# Returns the best node that we can reach from the current node
+def treePolicy( node, turn ):
 	while node.state.terminal() == False and node.state.winner() == 0:
+		print(node.fully_explored())
 		if ( node.fully_explored() == False ):
 			return expand(node, turn), -turn
 		else:
-			node = bestChild ( node , factor )
+			node = bestChild( node, 2.0 )
 			turn *= -1
 	return node, turn
 
@@ -46,12 +151,12 @@ def expand( node, turn ):
 			new_state.board[row][move] = turn 
 			new_state.last_move = [ row , move ]
 			break
-
-	node.addChild(new_state,move)
+	
+	node.addChild(new_state, move)
 	return node.children[-1]
 
 # Function for selecting the child with the highest number of visits
-def bestChild(node,factor):
+def bestChild(node, factor):
 	bestscore = -10000000.0
 	bestChildren = []
 	for c in node.children:
@@ -65,11 +170,21 @@ def bestChild(node,factor):
 			bestscore = score 
 	return random.choice(bestChildren)
 
-def tryMove(board, move):
-	# Takes the current board and a possible move specified 
-	# by the column. Returns the appropiate row where the 
-	# piece and be located. If it's not found it returns -1.
+# Returns the full list of legal moves that for next player.
+# Originally called legal_moves
+def get_legal_moves(board):
+	legal_moves = []
 
+	for i in range(len(board[0])):
+		if( board[0][i] == 0 ):
+			legal_moves.append(i)
+
+	return legal_moves
+
+# Takes the current board and a possible move specified 
+# by the column. Returns the appropiate row where the 
+# piece and be located. If it's not found it returns -1.
+def tryMove(board, move):
 	# Error if move is out of bounds or if the column is full
 	if ( move < 0 or move > 7 or board[0][move] != 0 ):
 		return -1
@@ -80,10 +195,11 @@ def tryMove(board, move):
 			return i-1
 	return len(board)-1
 
+# Picks a random move for the current player
+# Originally called next_state
 def pick_random_move(board, currentPlayer):
-	# Picks a random move for the current player
 	board_copy = copy.deepcopy(board)
-	moves = board_copy.legal_moves()
+	moves = get_legal_moves(board_copy)
 	
 	if len(moves) > 0 :
 		ind = random.randint(0,len(moves)-1) # Pick a random index
@@ -101,7 +217,8 @@ def rollout( state, turn  ):
 		turn *= -1
 	return  state.winner() 
 
-def backup( node , reward, turn ):
+# Function for backpropagation
+def backpropagation( node , reward, turn ):
 	while node != None:
 		node.visits += 1 
 		node.reward -= turn*reward
@@ -109,17 +226,18 @@ def backup( node , reward, turn ):
 		turn *= -1
 	return
 
-def MCTS( maxIter , root , factor ):
+# Function for MCTS
+def MCTS( maxIter , root ):
 	for inter in range(maxIter):
-		front, turn = treePolicy( root , 1 , factor )
-		reward = rollout(front.state, turn)
-		backup(front,reward,turn)
+		leaf, turn = treePolicy( root , 1 ) # selection/traversal step
+		reward = rollout(leaf.state, turn) # simulation step
+		backpropagation(leaf,reward,turn) # backpropagation step
 
 	ans = bestChild(root,0)
 	return ans
 
-def mctsMove(board ):
-    # Returns the best move using MonteCarlo Tree Search
-	o = Node(self.b)
-	bestMove = MCTS( 3000, o, 2.0 )
-	self.b = copy.deepcopy( bestMove.state )
+# Returns the best move using MonteCarlo Tree Search
+def mctsMove(board):
+	o = Node(Board(board))
+	bestMove = MCTS( 3000, o )
+	return bestMove.state.last_move[1]

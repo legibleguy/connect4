@@ -17,12 +17,12 @@ PLAYER = 0
 AI = 1
 
 EMPTY = 0
-PLAYER_PIECE = 1
-AI_PIECE = 2
+PLAYER_PIECE = -1
+AI_PIECE = 1
 
 WINDOW_LENGTH = 4
 
-MINIMAX = True # Set to True to use minimax, False to use MCTS
+MINIMAX = False # Set to True to use minimax, False to use MCTS
 
 def create_board():
 	board = np.zeros((ROW_COUNT,COLUMN_COUNT))
