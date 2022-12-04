@@ -50,6 +50,7 @@ def expand( node, turn ):
 	node.addChild(new_state,move)
 	return node.children[-1]
 
+# Function for selecting the child with the highest number of visits
 def bestChild(node,factor):
 	bestscore = -10000000.0
 	bestChildren = []
@@ -64,9 +65,39 @@ def bestChild(node,factor):
 			bestscore = score 
 	return random.choice(bestChildren)
 
-def defaultPolicy( state, turn  ):
+def tryMove(board, move):
+	# Takes the current board and a possible move specified 
+	# by the column. Returns the appropiate row where the 
+	# piece and be located. If it's not found it returns -1.
+
+	# Error if move is out of bounds or if the column is full
+	if ( move < 0 or move > 7 or board[0][move] != 0 ):
+		return -1
+
+	# Go through each row and check if that spot is full
+	for i in range(len(board)):
+		if ( board[i][move] != 0 ):
+			return i-1
+	return len(board)-1
+
+def pick_random_move(board, currentPlayer):
+	# Picks a random move for the current player
+	board_copy = copy.deepcopy(board)
+	moves = board_copy.legal_moves()
+	
+	if len(moves) > 0 :
+		ind = random.randint(0,len(moves)-1) # Pick a random index
+		chosen_move = moves[ind] # Use random index to pick a legal move
+
+		row = tryMove(board_copy, chosen_move)
+		board_copy[row][chosen_move] = currentPlayer
+		board_copy.last_move = [ row, chosen_move ]
+	return board_copy 
+
+# Function for simulating a rollout
+def rollout( state, turn  ):
 	while state.terminal()==False and state.winner() == 0 :
-		state = state.next_state( turn )
+		state = state.next_state( turn ) # Takes in the current player to move and makes a random move
 		turn *= -1
 	return  state.winner() 
 
@@ -81,16 +112,14 @@ def backup( node , reward, turn ):
 def MCTS( maxIter , root , factor ):
 	for inter in range(maxIter):
 		front, turn = treePolicy( root , 1 , factor )
-		reward = defaultPolicy(front.state, turn)
+		reward = rollout(front.state, turn)
 		backup(front,reward,turn)
 
 	ans = bestChild(root,0)
 	return ans
 
-def findBestMove(self , factor ):
+def mctsMove(board ):
     # Returns the best move using MonteCarlo Tree Search
-    	o = Node(self.b)
-        bestMove = MCTS( 3000, o, factor )
-        self.b = copy.deepcopy( bestMove.state )
-
-        self.reloadBoard()
+	o = Node(self.b)
+	bestMove = MCTS( 3000, o, 2.0 )
+	self.b = copy.deepcopy( bestMove.state )

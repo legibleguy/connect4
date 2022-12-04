@@ -275,7 +275,7 @@ while not game_over:
 		if MINIMAX:
 			col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
 		else:
-			col = findBestMove(board, AI_PIECE)
+			col = mctsMove(board)
 
 		if is_valid_location(board, col):
 			#pygame.time.wait(500)
