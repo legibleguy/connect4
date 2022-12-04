@@ -1,12 +1,9 @@
-# --- IMPORTS ---
-
 import numpy as np
 import random
 import pygame
 import sys
 import math
-
-# --- GLOBAL VARIABLES ---
+from montecarlo import *
 
 BLUE = (0,0,255)
 BLACK = (0,0,0)
@@ -20,13 +17,12 @@ PLAYER = 0
 AI = 1
 
 EMPTY = 0
-PLAYER_PIECE = 1
-AI_PIECE = 2
+PLAYER_PIECE = -1
+AI_PIECE = 1
 
 WINDOW_LENGTH = 4
-MINIMAX = True
 
-# --- FUNCTIONS ---
+MINIMAX = False # Set to True to use minimax, False to use MCTS
 
 def create_board():
 	board = np.zeros((ROW_COUNT,COLUMN_COUNT))
@@ -209,7 +205,6 @@ def draw_board(board):
 				pygame.draw.circle(screen, YELLOW, (int(c*SQUARESIZE+SQUARESIZE/2), height-int(r*SQUARESIZE+SQUARESIZE/2)), RADIUS)
 	pygame.display.update()
 
-# --- MAIN ---
 board = create_board()
 print_board(board)
 game_over = False
@@ -277,10 +272,10 @@ while not game_over:
 		#col = random.randint(0, COLUMN_COUNT-1)
 		#col = pick_best_move(board, AI_PIECE)
 
-		if MINIMAX == True:
+		if MINIMAX:
 			col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
-		# else:
-		# 	col = 
+		else:
+			col = mctsMove(board)
 
 		if is_valid_location(board, col):
 			#pygame.time.wait(500)

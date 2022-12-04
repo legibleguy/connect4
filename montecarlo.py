@@ -5,7 +5,7 @@ import copy
 
 class Board():
 	def __init__(self, board, last_move = [-1,-1]) -> None:
-		self.board = board
+		self.board = board[::-1]
 		self.last_move = last_move
 	
 	def tryMove(self, move):
@@ -13,7 +13,7 @@ class Board():
 		# by the column. Returns the appropiate row where the 
 		# piece and be located. If it's not found it returns -1.
 
-		if ( move < 0 or move > 7 or self.board[5][move] != 0 ):
+		if ( move < 0 or move > 7 or self.board[0][move] != 0 ):
 			return -1
 
 		for i in range(len(self.board)):
@@ -24,7 +24,7 @@ class Board():
 	def terminal(self):
        # Returns true when the game is finished, otherwise false.
 		for i in range(len(self.board[0])):
-			if ( self.board[5][i] == 0 ):
+			if ( self.board[0][i] == 0 ):
 				return False
 		return True
 	
@@ -32,9 +32,9 @@ class Board():
 		# Returns the full list of legal moves that for next player.
 		legal = []
 		for col in range(len(self.board[0])):
-			if( self.board[5][col] == 0 ):
+			if( self.board[0][col] == 0 ):
 				legal.append(col)
-
+			
 		return legal
 
 	def next_state(self, turn):
